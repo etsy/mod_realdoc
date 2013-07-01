@@ -18,12 +18,3 @@ deploy. Requests that started before the symlink change will
 continue to execute on the previous symlink target and 
 therefore will not be vulnerable to deploy race conditions.
 
-The one caveat which we have explicitly chosen to not
-attempt to resolve is that there is still a possible race
-condition between .htaccess mod_rewrite rules and the code.
-For reasons too complex to go into mod_rewrite rules have
-to run with the Apache configured docroot in place so we
-do the docroot change after these rules have run. This means
-that if a mod_rewrite redirect rule is changed from an
-existing target to a new target, this rule will come into
-effect before the target file is available. 
