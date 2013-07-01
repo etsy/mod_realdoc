@@ -2,8 +2,8 @@ mod_realdoc is an Apache module which does a realpath on
 the docroot symlink and sets the absolute path as the
 real document root for the remainder of the request.
 
-It executes after mod_rewrite and before a request handler
-like PHP.
+It executes as soon as Apache is finished reading the request
+from the client.
 
 The realpath frequency can be adjusted in httpd.conf using:
 
