@@ -147,7 +147,12 @@ static int realdoc_hook_handler(request_rec *r) {
 
     if (*last_saved_real_time < (current_request_time - realdoc_conf->realpath_every)) {
         if (NULL == realpath(core_conf->ap_document_root, last_saved_real_docroot)) {
-            AP_LOG_ERROR(r, "Error from realpath: %d. Original docroot: %s", errno, core_conf->ap_document_root);
+            if (errno == ENOENT) {
+                // Don't log an error for "No such file or directory"
+                AP_LOG_DEBUG(r, "Error from realpath: %d. Original docroot: %s", errno, core_conf->ap_document_root);
+            } else {
+                AP_LOG_ERROR(r, "Error from realpath: %d. Original docroot: %s", errno, core_conf->ap_document_root);
+            }
             return DECLINED;
         }
 
