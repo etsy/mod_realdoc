@@ -161,7 +161,7 @@ static int realdoc_hook_handler(request_rec *r) {
 }
 
 void realdoc_register_hook(apr_pool_t *p) {
-    ap_hook_post_read_request(realdoc_hook_handler, NULL, NULL, APR_HOOK_REALLY_FIRST);
+    ap_hook_translate_name(realdoc_hook_handler, NULL, NULL, APR_HOOK_FIRST+1);
 }
 
 AP_MODULE_DECLARE_DATA module realdoc_module = {
