@@ -1,0 +1,5 @@
+libapache2-mod-realdoc (1.0-1) unstable; urgency=medium
+
+  * Initial libapache2-mod-realdoc package
+
+ -- Ryan Lane <rlane@lyft.com>  Thu, 7 Aug 2014 00:02:48 +0000
