@@ -1,0 +1,2 @@
+mod .libs/mod_realdoc.so
+mod debian/realdoc.load

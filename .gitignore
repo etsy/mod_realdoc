@@ -14,3 +14,7 @@ application/logs/*.php
 /attach/
 /application/cache/_bancha/*.css
 /application/cache/_bancha/*.js
+.libs
+mod_realdoc.la
+mod_realdoc.lo
+mod_realdoc.slo

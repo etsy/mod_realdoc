@@ -1,0 +1,15 @@
+Source: libapache2-mod-realdoc
+Priority: extra
+Maintainer: Ryan Lane <rlane@lyft.com>
+Build-Depends: debhelper (>= 8.0.0), apache2-dev
+Standards-Version: 3.9.5
+Section: web
+Homepage: https://github.com/etsy/mod_realdoc
+#Vcs-Git: https://github.com/etsy/mod_realdoc.git
+
+Package: libapache2-mod-realdoc
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: mod_realdoc is an Apache module which does a realpath on the
+ docroot symlink and sets the absolute path as the real document root for
+ the remainder of the request.
