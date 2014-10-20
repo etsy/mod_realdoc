@@ -18,3 +18,6 @@ deploy. Requests that started before the symlink change will
 continue to execute on the previous symlink target and 
 therefore will not be vulnerable to deploy race conditions.
 
+This module is intended for the prefork mpm. Threaded mpms
+will incur race conditions.
+
