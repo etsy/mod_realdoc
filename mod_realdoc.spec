@@ -69,6 +69,7 @@ rm -rf %{buildroot}
 %changelog
 * Fri Nov 14 2014 Andy Thompson <andy@webtatic.com> - 0.0.1_8_1f9cbed-0.2
 - Update to latest commit
+- Disable the module if not using mpm prefork
 
 * Sun Oct 19 2014 Andy Thompson <andy@webtatic.com> - 0.0.1_7_397808c-0.1
 - Create SPEC for redhat release
