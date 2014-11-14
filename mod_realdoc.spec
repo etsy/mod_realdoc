@@ -5,13 +5,13 @@
 %{!?_httpd_confdir:    %{expand: %%global _httpd_confdir    %%{_sysconfdir}/httpd/conf.d}}
 %{!?_httpd_moddir:    %{expand: %%global _httpd_moddir    %%{_libdir}/httpd/modules}}
 
-%global gh_commit    397808c32f7c16d0f2a21cbdcb75523c70ff9931
+%global gh_commit    1f9cbeda1b5e037fc9e460b437a884e9e9a4f4ae
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 
 Summary: realpath document root module for the Apache HTTP Server
 Name: mod_realdoc
-Version: 0.0.1_7_%{gh_short}
-Release: 0.1%{?dist}
+Version: 0.0.1_8_%{gh_short}
+Release: 0.2%{?dist}
 License: MIT
 URL: https://github.com/etsy/mod_realdoc
 Group: System Environment/Daemons
@@ -67,5 +67,8 @@ rm -rf %{buildroot}
 %attr(770,apache,root) %dir %{_localstatedir}/lib/%{name}
 
 %changelog
+* Fri Nov 14 2014 Andy Thompson <andy@webtatic.com> - 0.0.1_8_1f9cbed-0.2
+- Update to latest commit
+
 * Sun Oct 19 2014 Andy Thompson <andy@webtatic.com> - 0.0.1_7_397808c-0.1
 - Create SPEC for redhat release
