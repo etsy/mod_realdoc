@@ -21,3 +21,5 @@ therefore will not be vulnerable to deploy race conditions.
 This module is intended for the prefork mpm. Threaded mpms
 will incur race conditions.
 
+module can be compiled and installed using apache extension tool:
+https://httpd.apache.org/docs/2.2/programs/apxs.html
