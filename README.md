@@ -21,3 +21,24 @@ therefore will not be vulnerable to deploy race conditions.
 This module is intended for the prefork mpm. Threaded mpms
 will incur race conditions.
 
+Please note that if you're granting access to your document root
+using a symlink, that will stop working, unless expanding the
+symlink also in your Apache configuration.
+
+If, for instance, your symlink is named "current" and your releases
+are something like "releases/20160519102200" (with "current" pointing
+to last release), you need to adapt your configration.
+
+``` apacheconf
+# Old configuration (without mod_realdoc):
+<Directory "/var/www/your_host/current">
+    Require all granted
+</Directory>
+
+# New configuration (with mod_realdoc):
+<Directory ~ "/var/www/your_host/releases/\d{14}">
+    Require all granted
+</Directory>
+```
+You need to adapt the regular expression `\d{14}` if you use a
+different schema from timestamp in your releases.
