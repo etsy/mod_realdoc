@@ -21,3 +21,8 @@ therefore will not be vulnerable to deploy race conditions.
 This module is intended for the prefork mpm. Threaded mpms
 will incur race conditions.
 
+Compile and install with:
+
+    apxs -c mod_realdoc.c
+    sudo apxs -i -a -n realdoc mod_realdoc.la
+
