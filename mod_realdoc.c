@@ -122,6 +122,12 @@ static int realdoc_hook_handler(request_rec *r) {
     current_request_time = apr_time_sec(r->request_time);
 
     apr_pool_userdata_get((void **) &last_saved_real_docroot, last_saved_docroot_key, r->server->process->pool);
+
+    /* Guard against being run a second time on the same request */
+    if(core_conf->ap_document_root == last_saved_real_docroot) {
+        return DECLINED;
+    }
+
     apr_pool_userdata_get((void **) &last_saved_real_time, last_saved_time_key, r->server->process->pool);
     if (!last_saved_real_time) {
         last_saved_real_time = apr_pcalloc(r->server->process->pool, sizeof(apr_time_t));
