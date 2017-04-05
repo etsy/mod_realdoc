@@ -110,16 +110,7 @@ static int realdoc_hook_handler(request_rec *r) {
     const char *last_saved_time_key = apr_psprintf(r->pool, "%s:%u:realdoc_saved_time", ap_get_server_name(r), ap_get_server_port(r));
 
     core_conf = ap_get_module_config(r->server->module_config, &core_module);
-    realdoc_conf = (realdoc_config_struct *) ap_get_module_config(r->server->module_config,
-                      &realdoc_module);
-
-    /* Grab the current docroot address and value and save it
-       so we can restore it in our cleanup func */
-    save = apr_pcalloc(r->pool, sizeof(realdoc_request_save_struct));
-    save->docroot = &core_conf->ap_document_root;
-    save->original = core_conf->ap_document_root;
-    apr_pool_cleanup_register(r->pool, save, realdoc_restore_docroot, realdoc_restore_docroot);
-    current_request_time = apr_time_sec(r->request_time);
+    realdoc_conf = (realdoc_config_struct *) ap_get_module_config(r->server->module_config, &realdoc_module);
 
     apr_pool_userdata_get((void **) &last_saved_real_docroot, last_saved_docroot_key, r->server->process->pool);
 
@@ -127,6 +118,15 @@ static int realdoc_hook_handler(request_rec *r) {
     if(core_conf->ap_document_root == last_saved_real_docroot) {
         return DECLINED;
     }
+
+    /* Grab the current docroot address and value and save it
+       so we can restore it in our cleanup func */
+    save = apr_pcalloc(r->pool, sizeof(realdoc_request_save_struct));
+    save->docroot = &core_conf->ap_document_root;
+    save->original = core_conf->ap_document_root;
+
+    apr_pool_cleanup_register(r->pool, save, realdoc_restore_docroot, realdoc_restore_docroot);
+    current_request_time = apr_time_sec(r->request_time);
 
     apr_pool_userdata_get((void **) &last_saved_real_time, last_saved_time_key, r->server->process->pool);
     if (!last_saved_real_time) {
