@@ -32,7 +32,12 @@
 #include "http_log.h"
 #include "apr_strings.h"
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <limits.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     const char **docroot;
@@ -41,6 +46,8 @@ typedef struct {
 
 typedef struct {
     apr_time_t realpath_every;
+    unsigned int use_readlink;
+    const char *prefix_path;
 } realdoc_config_struct;
 
 #define AP_LOG_DEBUG(rec, fmt, ...) ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, rec, "[realdoc] " fmt, ##__VA_ARGS__)
@@ -61,6 +68,8 @@ static void *merge_realdoc_config(apr_pool_t *p, void *basev, void *addv)
                             apr_palloc(p, sizeof(realdoc_config_struct));
 
     new->realpath_every = add->realpath_every ? add->realpath_every : base->realpath_every;
+    new->use_readlink = add->use_readlink ? add->use_readlink : base->use_readlink;
+    new->prefix_path = add->prefix_path ? add->prefix_path : base->prefix_path;
     return new;
 }
 
@@ -86,10 +95,90 @@ static const char *set_realdoc_config(cmd_parms *cmd, void *dummy, const char *a
     return NULL;
 }
 
+/*
+ * Return path with first symlink resolved, if any.
+ * Buffer buf must be null-terminated and can be
+ * pre-filled with the path to skip ahead to avoid
+ * having to stat those path components.
+ */
+int first_link(char *path, char *buf)
+{
+    struct stat st;
+    char *p = path;
+
+    if (!*path) return 0;
+    if (*path != '/') {
+        errno = ENOENT;
+        return -1;
+    }
+
+    if (strlen(buf)) {
+        char *skip = strstr(path, buf);
+        if (skip == path) {
+            p = path + strlen(buf) - 1;
+        } else {
+            *buf = '\0';
+        }
+    }
+
+    while((p = strchr(p+1, '/'))) {
+        int bytes;
+        *p = '\0';
+        strcpy(buf, path);
+        *p = '/';
+        if (lstat(buf, &st) < 0) return -1;
+        if (S_ISLNK(st.st_mode)) {
+            char lbuf[PATH_MAX];
+            if ((bytes = readlink(buf, lbuf, sizeof(lbuf))) < 0) return -1;
+            lbuf[bytes] = '\0';
+            if (lbuf[0] == '/') {
+                strncpy(buf, lbuf, bytes+1);
+            } else {
+                // For a relative symlink backtrack and replace
+                char *pb = strchr(buf, '\0');
+                while (*--pb != '/');
+                *++pb = '\0';
+                strncat(buf, lbuf, bytes+1);
+            }
+            strcat(buf, p);
+            return 0;
+        }
+    }
+
+    // No symlinks were found, just return the original path in the buffer
+    strcpy(buf, path);
+    return 0;
+}
+
+static const char *set_realdoc_readlink(cmd_parms *cmd, void *dummy, const char *arg)
+{
+    realdoc_config_struct *conf = (realdoc_config_struct *) ap_get_module_config(cmd->server->module_config,
+                      &realdoc_module);
+
+    if (!conf) {
+        return apr_psprintf(cmd->pool,
+                     "realdoc configuration not initialized");
+    }
+
+    if (*arg == '/') {
+        conf->use_readlink = 1;
+        conf->prefix_path = arg;
+    } else if (strcasecmp(arg, "On") == 0) {
+        conf->use_readlink = 1;
+        conf->prefix_path = NULL;
+    } else {
+        conf->use_readlink = 0;
+    }
+
+    return NULL;
+}
+
 static const command_rec realdoc_cmds[] =
 {
     AP_INIT_TAKE1("RealpathEvery", set_realdoc_config, NULL, RSRC_CONF,
      "Run the realpath at most every so many seconds"),
+    AP_INIT_TAKE1("UseReadlink", set_realdoc_readlink, NULL, RSRC_CONF,
+     "Use readlink instead of realpath to just get the first symlink target (On|Off|<path>)"),
     {NULL}
 };
 
@@ -152,13 +241,27 @@ static int realdoc_hook_handler(request_rec *r) {
     }
 
     if (*last_saved_real_time < (current_request_time - realdoc_conf->realpath_every)) {
-        if (NULL == realpath(core_conf->ap_document_root, last_saved_real_docroot)) {
-            AP_LOG_ERROR(r, "Error from realpath: %d. Original docroot: %s", errno, core_conf->ap_document_root);
-            return DECLINED;
+        if (realdoc_conf->use_readlink) {
+            if (realdoc_conf->prefix_path) {
+                strcpy(last_saved_real_docroot, realdoc_conf->prefix_path);
+            }
+            AP_LOG_DEBUG(r, "PID %d calling first_link(). Original docroot: %s. Buffer: %s", getpid(), core_conf->ap_document_root, last_saved_real_docroot);
+            if (-1 == first_link((char *)core_conf->ap_document_root, last_saved_real_docroot)) {
+                AP_LOG_ERROR(r, "Error from readlink: %d. Original docroot: %s", errno, core_conf->ap_document_root);
+                return DECLINED;
+            }
+        } else {
+            if (NULL == realpath(core_conf->ap_document_root, last_saved_real_docroot)) {
+                AP_LOG_ERROR(r, "Error from realpath: %d. Original docroot: %s", errno, core_conf->ap_document_root);
+                return DECLINED;
+            }
         }
 
-        AP_LOG_DEBUG(r, "PID %d calling realpath. Original docroot: %s. Resolved: %s", getpid(), core_conf->ap_document_root,
-		last_saved_real_docroot);
+        if (realdoc_conf->use_readlink) {
+            AP_LOG_DEBUG(r, "PID %d calling readlink. Original docroot: %s. Resolved: %s", getpid(), core_conf->ap_document_root, last_saved_real_docroot);
+        } else {
+            AP_LOG_DEBUG(r, "PID %d calling realpath. Original docroot: %s. Resolved: %s", getpid(), core_conf->ap_document_root, last_saved_real_docroot);
+        }
         *last_saved_real_time = current_request_time;
     }
 
